@@ -1,0 +1,11 @@
+{
+  "name": "kinokuniya-stock-checker",
+  "version": "0.0.1",
+  "main": "index.js",
+  "author": "oshimaryo",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "puppeteer": "^0.13.0"
+  }
+}
