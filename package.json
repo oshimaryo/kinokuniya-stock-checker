@@ -6,6 +6,7 @@
   "license": "MIT",
   "private": false,
   "dependencies": {
-    "puppeteer": "^0.13.0"
+    "puppeteer": "5.0.0",
+    "puppeteer-cluster": "^0.22.0"
   }
 }
