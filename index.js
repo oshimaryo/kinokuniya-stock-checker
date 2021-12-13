@@ -16,7 +16,10 @@ if (url == '') {
 
   const cluster = await Cluster.launch({
     concurrency: Cluster.CONCURRENCY_CONTEXT,
-    maxConcurrency: 10
+    maxConcurrency: 10,
+    puppeteerOptions: {
+      executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    }
   })
 
   await cluster.task(async ({ page, data: i }) => {
