@@ -1,12 +1,14 @@
 const puppeteer = require('puppeteer')
 const { Cluster } = require('puppeteer-cluster')
+const program = require('commander')
 
-const url = process.env.URL
+program.parse(process.argv)
+const url = program.args[0]
 
 // https://qiita.com/syuilo/items/0800d7e44e93203c7285
 process.on('unhandledRejection', console.dir)
 
-if (url == '') {
+if (!url || url == '') {
   process.abort('need URL')
 }
 
@@ -67,7 +69,7 @@ async function checkStock(page) {
     console.warn(err)
   })
   const status = await page.evaluate((el) => el.textContent, statusEl)
-  console.log(status)
+  // console.log(status)
   if (!status.includes('× 在庫なし')) {
     const shopNameEl = await page.$('.shop_name').catch((err) => {
       // 店名
