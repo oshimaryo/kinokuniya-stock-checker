@@ -70,7 +70,7 @@ async function checkStock(page) {
   })
   const status = await page.evaluate((el) => el.textContent, statusEl)
   // console.log(status)
-  if (!status.includes('× 在庫なし')) {
+  if (!status.includes('× 在庫なし') && !status.includes('在庫非表示')) {
     const shopNameEl = await page.$('.shop_name').catch((err) => {
       // 店名
       console.warn(err)
