@@ -20,16 +20,25 @@ if (!url || url == '') {
     concurrency: Cluster.CONCURRENCY_CONTEXT,
     maxConcurrency: 10,
     puppeteerOptions: {
-      executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium'
+      defaultViewport: { width: 1080, height: 1080 }
     }
   })
 
   await cluster.task(async ({ page, data: i }) => {
-    await page.goto(storesPageUrl, { waitUntil: 'networkidle2' })
+    page.setDefaultTimeout(60000)
+    page.setDefaultNavigationTimeout(60000)
+    await page.goto(storesPageUrl, { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector("[alt^='在庫を確認する']")
     const buttons = await page.$$("[alt^='在庫を確認する']") // 「在庫を確認する」
-    Promise.all([await buttons[i].click(), await page.waitForNavigation({ waitUntil: 'networkidle2' })])
+
+    // waitForNavigation を先に登録してから click を実行
+    const navigationPromise = page.waitForNavigation({ waitUntil: 'domcontentloaded' })
+    await buttons[i].click()
+    await navigationPromise
+
+    // ナビゲーション後、要素が読み込まれるまで待機
+    await page.waitForSelector('.address')
     storeWithStock += await checkStock(page)
-    await page.goBack({ waitUntil: 'networkidle2' })
   })
 
   for (let i = 0; i < storesLength; i++) {
@@ -43,13 +52,19 @@ if (!url || url == '') {
 })()
 
 async function getInfo(url) {
-  const browser = await puppeteer.launch()
+  const browser = await puppeteer.launch({ headless: true })
   const page = await browser.newPage()
+  page.setDefaultTimeout(60000) // 全体のタイムアウトを60秒に
+  page.setDefaultNavigationTimeout(60000)
   await page.setViewport({ width: 1080, height: 1080 })
-  await page.goto(url, { waitUntil: 'networkidle2' }) // 指定したURLを開く
+  await page.goto(url, { waitUntil: 'domcontentloaded' }) // 指定したURLを開く
 
-  page.click('.shopStockButton2')
-  await page.waitForNavigation({ waitUntil: 'networkidle2' })
+  // ボタンが表示されるまで待機
+  await page.waitForSelector('.shopStockButton2')
+  await Promise.all([
+    page.click('.shopStockButton2'),
+    page.waitForNavigation({ waitUntil: 'domcontentloaded' })
+  ])
   const storesPageUrl = page.url()
 
   const buttons = await page.$$("[alt^='在庫を確認する']") // 「在庫を確認する」
@@ -64,20 +79,23 @@ async function getInfo(url) {
 }
 
 async function checkStock(page) {
-  const statusEl = await page.$('.address b:nth-child(1)').catch((err) => {
-    // 在庫状況
-    console.warn(err)
-  })
-  const status = await page.evaluate((el) => el.textContent, statusEl)
-  // console.log(status)
-  if (!status.includes('× 在庫なし') && !status.includes('在庫非表示')) {
-    const shopNameEl = await page.$('.shop_name').catch((err) => {
-      // 店名
-      console.warn(err)
-    })
-    const shopName = await page.evaluate((el) => el.textContent, shopNameEl)
+  try {
+    const statusEl = await page.$('.address b:nth-child(1)')
+    if (!statusEl) return 0
+
+    const status = await page.evaluate((el) => el.textContent, statusEl)
+    if (!status || status.includes('× 在庫なし') || status.includes('在庫非表示')) {
+      return 0
+    }
+
+    const shopNameEl = await page.$('.shop_name')
+    const shopName = shopNameEl
+      ? await page.evaluate((el) => el.textContent, shopNameEl)
+      : '不明'
     console.log(`${shopName}: ${status}`)
     return 1
+  } catch (err) {
+    console.warn('checkStock error:', err.message)
+    return 0
   }
-  return 0
 }

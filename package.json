@@ -5,9 +5,12 @@
   "author": "oshimaryo",
   "license": "MIT",
   "private": false,
+  "volta": {
+    "node": "22.14.0"
+  },
   "dependencies": {
     "commander": "^8.3.0",
-    "puppeteer": "10.4.0",
-    "puppeteer-cluster": "^0.22.0"
+    "puppeteer": "^24.0.0",
+    "puppeteer-cluster": "^0.25.0"
   }
 }
